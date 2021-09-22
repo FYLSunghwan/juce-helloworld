@@ -116,6 +116,59 @@ void SimpleEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     
     *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
     *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    
+    auto cutCoefficients = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq,
+                                                                                                       sampleRate,
+                                                                                                       (chainSettings.lowCutSlope + 1) * 2);
+    
+    auto& leftLowCut = leftChain.get<ChainPositions::LowCut>();
+    
+    leftLowCut.setBypassed<Slope::Slope_12>(true);
+    leftLowCut.setBypassed<Slope::Slope_24>(true);
+    leftLowCut.setBypassed<Slope::Slope_36>(true);
+    leftLowCut.setBypassed<Slope::Slope_48>(true);
+    
+    switch( chainSettings.lowCutSlope )
+    {
+        case Slope_12:
+        {
+            *leftLowCut.get<Slope_12>().coefficients = *cutCoefficients[Slope_12];
+            leftLowCut.setBypassed<Slope_12>(false);
+            break;
+        }
+        case Slope_24:
+        {
+            *leftLowCut.get<Slope_12>().coefficients = *cutCoefficients[Slope_12];
+            leftLowCut.setBypassed<Slope_12>(false);
+            *leftLowCut.get<Slope_24>().coefficients = *cutCoefficients[Slope_24];
+            leftLowCut.setBypassed<Slope_24>(false);
+            break;
+        }
+        case Slope_36:
+        {
+            *leftLowCut.get<Slope_12>().coefficients = *cutCoefficients[Slope_12];
+            leftLowCut.setBypassed<Slope_12>(false);
+            *leftLowCut.get<Slope_24>().coefficients = *cutCoefficients[Slope_24];
+            leftLowCut.setBypassed<Slope_24>(false);
+            *leftLowCut.get<Slope_36>().coefficients = *cutCoefficients[Slope_36];
+            leftLowCut.setBypassed<Slope_36>(false);
+            break;
+        }
+        case Slope_48:
+        {
+            *leftLowCut.get<Slope_12>().coefficients = *cutCoefficients[Slope_12];
+            leftLowCut.setBypassed<Slope_12>(false);
+            *leftLowCut.get<Slope_24>().coefficients = *cutCoefficients[Slope_24];
+            leftLowCut.setBypassed<Slope_24>(false);
+            *leftLowCut.get<Slope_36>().coefficients = *cutCoefficients[Slope_36];
+            leftLowCut.setBypassed<Slope_36>(false);
+            *leftLowCut.get<Slope_48>().coefficients = *cutCoefficients[Slope_48];
+            leftLowCut.setBypassed<Slope_48>(false);
+            break;
+        }
+    }
+    
+    
 }
 
 void SimpleEQAudioProcessor::releaseResources()
