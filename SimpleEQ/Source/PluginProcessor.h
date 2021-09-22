@@ -22,7 +22,7 @@ struct ChainSettings
 {
     float peakFreq {  }, peakGainInDecibels{ 0 }, peakQuality { 1.f };
     float lowCutFreq { 0 }, highCutFreq { 0 };
-    int lowCutSlope { Slope::Slope_12 }, highCutSlope { Slope::Slope_12 };
+    Slope lowCutSlope { Slope::Slope_12 }, highCutSlope { Slope::Slope_12 };
 };
 
 ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
@@ -86,6 +86,61 @@ private:
         Peak,
         HighCut
     };
+    
+    void updatePeakFilter(const ChainSettings& chainSettings);
+    using Coefficients = Filter::CoefficientsPtr;
+    static void updateCoefficients(Coefficients& old, const Coefficients& replacements);
+    
+    template<typename ChainType, typename CoefficientType>
+    void updateCutFilter(ChainType& lowCut,
+                         const CoefficientType& cutCoefficients,
+                         const Slope& lowCutSlope)
+    {
+        lowCut.template setBypassed<Slope::Slope_12>(true);
+        lowCut.template setBypassed<Slope::Slope_24>(true);
+        lowCut.template setBypassed<Slope::Slope_36>(true);
+        lowCut.template setBypassed<Slope::Slope_48>(true);
+        
+        switch( lowCutSlope )
+        {
+            case Slope_12:
+            {
+                *lowCut.template get<Slope_12>().coefficients = *cutCoefficients[Slope_12];
+                lowCut.template setBypassed<Slope_12>(false);
+                break;
+            }
+            case Slope_24:
+            {
+                *lowCut.template get<Slope_12>().coefficients = *cutCoefficients[Slope_12];
+                lowCut.template setBypassed<Slope_12>(false);
+                *lowCut.template get<Slope_24>().coefficients = *cutCoefficients[Slope_24];
+                lowCut.template setBypassed<Slope_24>(false);
+                break;
+            }
+            case Slope_36:
+            {
+                *lowCut.template get<Slope_12>().coefficients = *cutCoefficients[Slope_12];
+                lowCut.template setBypassed<Slope_12>(false);
+                *lowCut.template get<Slope_24>().coefficients = *cutCoefficients[Slope_24];
+                lowCut.template setBypassed<Slope_24>(false);
+                *lowCut.template get<Slope_36>().coefficients = *cutCoefficients[Slope_36];
+                lowCut.template setBypassed<Slope_36>(false);
+                break;
+            }
+            case Slope_48:
+            {
+                *lowCut.template get<Slope_12>().coefficients = *cutCoefficients[Slope_12];
+                lowCut.template setBypassed<Slope_12>(false);
+                *lowCut.template get<Slope_24>().coefficients = *cutCoefficients[Slope_24];
+                lowCut.template setBypassed<Slope_24>(false);
+                *lowCut.template get<Slope_36>().coefficients = *cutCoefficients[Slope_36];
+                lowCut.template setBypassed<Slope_36>(false);
+                *lowCut.template get<Slope_48>().coefficients = *cutCoefficients[Slope_48];
+                lowCut.template setBypassed<Slope_48>(false);
+                break;
+            }
+        }
+    }
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleEQAudioProcessor)
 };
